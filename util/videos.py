@@ -44,18 +44,20 @@ class Video:
             self.kinetic_cycle = int( props['kinetic_cycle'] )
             self.exposure = int( props['exposure_time'] )
             
-            self.data = tdms_file['Image']['Image'].data
-            self.data.reshape( self.frames, self.width, self.height )
-            
+            raw_data = tdms_file['Image']['Image'].data
+            raw_data.reshape( self.frames, self.width, self.height )
+            self.data = raw_data/np.max(raw_data)
+        
         if TDMS_CONTENTS.ROI_DATA in contents:
             self.width = int( props['X Pixels'] )
             self.height = int( props['Y Pixels'] )
             #self.frames = int( props['Frames'] ) # !!! BUG: 'Frames' is always 0, needs to be fixed in LabVIEW
 
-            self.data = tdms_file['Data']['Image ROI'].data
+            raw_data = tdms_file['Data']['Image ROI'].data
             self.frames = int(self.data.size/(self.width*self.height)) # FIX: Get the number of frames from data size and the number of pixel per images
-            self.data.reshape( self.frames, self.width, self.height )
-            
+            raw_data.reshape( self.frames, self.width, self.height )
+            self.data = raw_data/np.max(raw_data)
+        
         if TDMS_CONTENTS.METADATA in contents:
             #self.width = int( props['dimx'] )
             #self.height = int( props['dimy'] )
@@ -63,10 +65,7 @@ class Video:
             self.binning = int( props['binning'] )
             self.kinetic_cycle = int( props['kinetic_cycle'] )
             self.exposure = int( props['exposure_time'] )
-            
-            #self.data = tdms_file['Image']['Image'].data
-            #self.data.reshape( self.frames, self.width, self.height )
-            
+        
         return self
         
     def framerate(self):
