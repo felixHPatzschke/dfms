@@ -1,5 +1,5 @@
 
-#from util.tdms import Video
+from util.tdms import Video
 #from util.objects import Object
 from util.devices import SpectrometerDataSet, Device
 

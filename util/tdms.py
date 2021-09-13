@@ -7,23 +7,109 @@ import nptdms
 
 from enum import Flag, auto
 
+from os import path
+
+import warnings
 
 
 
-class TDMS_CONTENTS(Flag):
+
+class Content(Flag):
     FULL_DATA = auto()
     ROI_DATA = auto()
     METADATA = auto()
 
-class TDMS_FORMATS(Flag):
+class Format(Flag):
     VIDEO = auto()
     MODULE = auto()
-    
 
+class Descriptor:
+    def __init__(self):
+        self.data_file = ""
+        self.metadata_file = ""
+        self.data_format = 0
+    
+    # assuming the dictionary is valid
+    def from_dict(self, dictionary):
+        self.data_file = dictionary['data']
+        self.metadata_file = dictionary['meta']
+        self.data_format = dictionary['format']
+    
+    def to_dict(self):
+        return { 'format' : self.data_format, 'data' : self.data_file, 'meta' : self.metadata_file }
+
+
+# turn a list of filenames into a list of descriptors
+# assume default file name scheme
+def files_to_descriptors(files):
+    FULL_OR_META = '_video.tdms'
+    ROI = '_module.tdms'
+    
+    DICT_DATA_KEY = 'data'
+    DICT_META_KEY = 'meta'
+    DICT_FMT_KEY = 'format'
+    
+    split_by_basename = {}
+    # a dictionary to bundle the files that belong together 
+    # and use the base names, which ought to be the same, as keys
+    for fn in files:
+        passing = True
+        if fn.endswith('.tdms'):
+            # will weed out anything that isn't a TDMS file
+            if fn.endswith(FULL_OR_META):
+                # should either be a full video or a metadata file
+                bn = fn[:-len(FULL_OR_META)]
+                suffix = FULL_OR_META
+                
+            elif fn.endswith(ROI):
+                # should be an ROI video file
+                bn = fn[:-len(ROI)]
+                suffix = ROI
+                
+            else:
+                warnings.warn("{f} is not a recognized format and will be ignored.".format(f=fn))
+                passing = False
+                
+            if passing:
+                # create an entry for this basename if it doesn't exist yet
+                if bn not in split_by_basename:
+                    split_by_basename[bn] = {}
+                
+                if suffix == FULL_OR_META:
+                    split_by_basename[bn][DICT_META_KEY] = fn
+                elif suffix == ROI:
+                    split_by_basename[bn][DICT_DATA_KEY] = fn
+                else:
+                    warnings.warn("something has gone VERY wrong")
+            
+        else:
+            if not fn.endswith('.tdms_index'):
+                warnings.warn("{f} is not a recognized format and will be ignored.".format(f=fn))
+    
+    res = []
+    # array for output
+    for bn in split_by_basename:
+        passing = True
+        if DICT_DATA_KEY not in split_by_basename[bn]:
+            split_by_basename[bn][DICT_DATA_KEY] = split_by_basename[bn][DICT_META_KEY]
+            split_by_basename[bn][DICT_FMT_KEY] = Format.VIDEO
+        else:
+            if DICT_META_KEY not in split_by_basename[bn]:
+                warnings.warn("{b} is missing metadata and will be ignored.".format(b=bn))
+                # TODO actually remove it from the list
+                passing = False
+            else:
+                split_by_basename[bn][DICT_FMT_KEY] = Format.MODULE
+        if passing:
+            res.append( Descriptor() )
+            res[-1].from_dict( split_by_basename[bn] )
+    
+    return res
+    #return [ Descriptor().from_dict( d ) for d in res ]
 
 
 class Video:
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         self.width = 0
         self.height = 0
         self.frames = 0
@@ -67,7 +153,20 @@ class Video:
             self.exposure = int( props['exposure_time'] )
         
         return self
-        
+    
+    def load(self, descriptor):
+        if descriptor.data_format == Format.VIDEO:
+            tdms_file = nptdms.TdmsFile( descriptor.data_file )
+            self.load( Content.FULL_DATA, tdms_file )
+        elif descriptor.data_format == Format.MODULE:
+            tdms_file = nptdms.TdmsFile( descriptor.data_file )
+            self.load( Content.ROI_DATA, tdms_file )
+            tdms_file = nptdms.TdmsFile( descriptor.metadata_file )
+            self.load( Content.METADATA, tdms_file )
+        else:
+            warnings.warn("something has gone terribly wrong:\ndescriptor.data_format is not a recognized value.")
+        return self
+    
     def framerate(self):
         return 1.0/self.kinetic_cycle
     
