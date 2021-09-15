@@ -114,61 +114,72 @@ class Video:
         self.height = 0
         self.frames = 0
         self.kinetic_cycle = 0.0
+        self.framerate = 0.0
         self.exposure = 0.0
         self.binning = 0
         self.data = np.zeros( (1,1,1) )
         
-    def load(self, contents, tdms_file):
+    def load_from_tdms_file(self, contents, tdms_file):
         #tdms_file = nptdms.TdmsFile(filename)
         props = tdms_file.properties
         
-        if TDMS_CONTENTS.FULL_DATA in contents:
+        if Content.FULL_DATA in contents:
             self.width = int( props['dimx'] )
             self.height = int( props['dimy'] )
             self.frames = int( props['dimz'] )
             self.binning = int( props['binning'] )
-            self.kinetic_cycle = int( props['kinetic_cycle'] )
-            self.exposure = int( props['exposure_time'] )
+            self.kinetic_cycle = float( props['kinetic_cycle'] )
+            self.framerate = 1.0/self.kinetic_cycle
+            try:
+                self.exposure = float( props['exposure_time'] )
+            except KeyError:
+                self.exposure = self.kinetic_cycle
             
             raw_data = tdms_file['Image']['Image'].data
-            raw_data.reshape( self.frames, self.width, self.height )
+            raw_data = raw_data.reshape( self.frames, self.width, self.height )
             self.data = raw_data/np.max(raw_data)
         
-        if TDMS_CONTENTS.ROI_DATA in contents:
+        if Content.ROI_DATA in contents:
             self.width = int( props['X Pixels'] )
             self.height = int( props['Y Pixels'] )
             #self.frames = int( props['Frames'] ) # !!! BUG: 'Frames' is always 0, needs to be fixed in LabVIEW
 
             raw_data = tdms_file['Data']['Image ROI'].data
             self.frames = int(self.data.size/(self.width*self.height)) # FIX: Get the number of frames from data size and the number of pixel per images
-            raw_data.reshape( self.frames, self.width, self.height )
+            raw_data = raw_data.reshape( self.frames, self.width, self.height )
             self.data = raw_data/np.max(raw_data)
         
-        if TDMS_CONTENTS.METADATA in contents:
+        if Content.METADATA in contents:
             #self.width = int( props['dimx'] )
             #self.height = int( props['dimy'] )
             #self.frames = int( props['dimz'] )
             self.binning = int( props['binning'] )
-            self.kinetic_cycle = int( props['kinetic_cycle'] )
-            self.exposure = int( props['exposure_time'] )
+            self.kinetic_cycle = float( props['kinetic_cycle'] )
+            self.framerate = 1.0/self.kinetic_cycle
+            try:
+                self.exposure = float( props['exposure_time'] )
+            except KeyError:
+                self.exposure = self.kinetic_cycle
         
         return self
     
     def load(self, descriptor):
         if descriptor.data_format == Format.VIDEO:
             tdms_file = nptdms.TdmsFile( descriptor.data_file )
-            self.load( Content.FULL_DATA, tdms_file )
+            self.load_from_tdms_file( Content.FULL_DATA, tdms_file )
+            #del tdms_file
         elif descriptor.data_format == Format.MODULE:
             tdms_file = nptdms.TdmsFile( descriptor.data_file )
-            self.load( Content.ROI_DATA, tdms_file )
+            self.load_from_tdms_file( Content.ROI_DATA, tdms_file )
             tdms_file = nptdms.TdmsFile( descriptor.metadata_file )
-            self.load( Content.METADATA, tdms_file )
+            self.load_from_tdms_file( Content.METADATA, tdms_file )
+            #del tdms_file
         else:
             warnings.warn("something has gone terribly wrong:\ndescriptor.data_format is not a recognized value.")
         return self
     
-    def framerate(self):
-        return 1.0/self.kinetic_cycle
+    def px_to_um(self):
+        return (1.8/250)*8*self.binning
     
     
     

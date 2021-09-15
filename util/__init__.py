@@ -4,7 +4,5 @@ from util.tdms import Video
 from util.devices import SpectrometerDataSet, Device
 
 
-class persistent_data_paths:
-    devices = "persistent/devices/"
-    calibration = "persistent/calibration/"
-    
+calibration_persistent_data_path = "persistent/calibration/"
+
