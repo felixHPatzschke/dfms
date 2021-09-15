@@ -114,3 +114,7 @@ dmypy.json
 .pyre/
 util/.devices.py.kate-swp
 util/.__init__.py.kate-swp
+
+# TDMS and TDMS index files
+*.tdms
+*.tdms_index
