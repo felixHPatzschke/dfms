@@ -112,8 +112,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-util/.devices.py.kate-swp
-util/.__init__.py.kate-swp
+
+# kate swap files
+*.kate-swp
 
 # TDMS and TDMS index files
 *.tdms
