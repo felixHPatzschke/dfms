@@ -85,6 +85,7 @@ class Descriptor:
         self.name = ""
         self.vendor = ""
         self.function = ""
+        self.uid = "" # unique identifier (TODO: make sure they're actually unique)
         
         for attrib in descr:
             if attrib == 'name':
@@ -93,6 +94,8 @@ class Descriptor:
                 self.vendor = descr[attrib]
             elif attrib == 'function':
                 self.function = descr[attrib]
+            elif attrib == 'uid':
+                self.uid = descr[attrib]
     
     def descr_str(self):
         return "{f}: {v} {n}".format( f=self.function, v=self.vendor, n=self.name )
@@ -110,6 +113,7 @@ class Device:
         self.name = ""
         self.vendor = ""
         self.function = ""
+        self.uid = ""
         
         self.id_data = Descriptor(**descr).to_dict()
         self.spec_val = interp1d( np.array([0.0, 500.0, 1000.0]),
@@ -128,6 +132,8 @@ class Device:
                 self.vendor = descr[attrib]
             elif attrib == 'function':
                 self.function = descr[attrib]
+            elif attrib == 'uid':
+                self.uid = descr[attrib]
 
     
     def evaluate(self, LDA):
@@ -169,7 +175,7 @@ class Device:
 persistent_data_path = "persistent/devices/"
 
 def export(dev):
-    filename = "{d}/{v} {n}.pickle".format( d=persistent_data_path, v=dev.vendor, n=dev.name )
+    filename = "{d}/{u}.pickle".format( d=persistent_data_path, u=dev.uid )
     exportfile = open( filename, 'wb' )
     exportfile.write( pickle.dumps(dev) )
     exportfile.close()
