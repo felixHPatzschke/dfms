@@ -14,14 +14,14 @@ import warnings
 
 
 
-class Content(Flag):
-    FULL_DATA = auto()
-    ROI_DATA = auto()
-    METADATA = auto()
+class Content(int, Flag):
+    FULL_DATA: int = auto()
+    ROI_DATA: int = auto()
+    METADATA: int = auto()
 
-class Format(Flag):
-    VIDEO = auto()
-    MODULE = auto()
+class Format(int, Flag):
+    VIDEO: int = auto()
+    MODULE: int = auto()
 
 class Descriptor:
     def __init__(self):
