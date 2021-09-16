@@ -119,3 +119,7 @@ dmypy.json
 # TDMS and TDMS index files
 *.tdms
 *.tdms_index
+
+# Tests
+*Test.ipynb
+*test.ipynb
