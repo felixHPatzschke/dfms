@@ -140,8 +140,8 @@ class Video:
             self.data = raw_data/np.max(raw_data)
         
         if Content.ROI_DATA in contents:
-            self.width = int( props['X Pixels'] )
-            self.height = int( props['Y Pixels'] )
+            self.width = int( props['Y Pixels'] )
+            self.height = int( props['X Pixels'] )
             #self.frames = int( props['Frames'] ) # !!! BUG: 'Frames' is always 0, needs to be fixed in LabVIEW
 
             raw_data = tdms_file['Data']['Image ROI'].data
