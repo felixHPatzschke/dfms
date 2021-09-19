@@ -3,7 +3,7 @@ import os
 import sys
 
 from PyQt5 import QtCore,QtWidgets
-from PyQt5.QtWidgets import QFileDialog, QTreeWidgetItem
+from PyQt5.QtWidgets import QFileDialog, QTreeWidgetItem, QListWidgetItem
 
 import numpy as np
 pi = np.pi
@@ -11,17 +11,20 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from ui import mainwindow
-from util import tdms
+from util import tdms, devices
 
 
 
 video_descriptors = []
 videos_loaded = []
 videos = []
+
 vdata_max = np.zeros( (1,1,1) )
 vdata_mean = np.zeros( (1,1,1) )
 current_frame = 0
 video_view_mode = "Frame"
+
+devs = []
 
 def avail_frame_count():
     res = 0
@@ -72,9 +75,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.horizontalSlider.valueChanged.connect(self.scrub_frames)
         self.ui.comboBox_2.currentTextChanged.connect(self.change_video_view_mode)
         
+        self.ui.pushButton_2.clicked.connect(self.load_devices)
+        self.ui.listWidget.itemClicked.connect(self.update_selected_devices)
+        
+        self.video_items = []
+        self.dev_items = []
+        self.selected_dev_items = []
+        
         self.initialize_io_widgets()
+        self.load_devices()
     
     def initialize_io_widgets(self):
+        self.ui.progressBar.setValue(0)
         self.ui.progressBar.setEnabled(False)
         
         # Video view and control
@@ -136,7 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def show_video_descriptors(self):
         global video_descriptors
         
-        items = []
+        self.video_items = []
         vidx = 0
         for dsc in video_descriptors:
             top_level_entries = [ "Video {i}".format(i=vidx), "" ]
@@ -155,11 +167,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 item.addChild(child)
             #item.setExpanded(True)
             item.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
-            items.append(item)
+            #item.setCheckState(0, False)
+            self.video_items.append(item)
             vidx += 1
         self.ui.treeWidget.clear()
-        self.ui.treeWidget.insertTopLevelItems(0, items)
-        for i in items:
+        self.ui.treeWidget.insertTopLevelItems(0, self.video_items)
+        for i in self.video_items:
             self.ui.treeWidget.expandItem(i)
     
     def load_video_first(self):
@@ -168,11 +181,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def load_video_last(self):
         self.load_videos( [-1] )
     
-    #def load_video_selected(self):
-    #    selected_indices = []
-    #    selected_items = self.ui.treeWidget.selectedItems();
-    #    
-    #    self.load_videos( selected_indices )
+    """
+    def load_video_selected(self):
+        selected_indices = []
+        selected_items = self.ui.treeWidget.selectedItems();
+        
+        self.load_videos( selected_indices )
+    """
     
     def load_video_all(self):
         self.load_videos( range(len(video_descriptors)) )
@@ -254,7 +269,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         if video_view_mode == "Frame":
             #vi, fi = indices_from_frame(current_frame)
-            im = ax.imshow( get_frame(current_frame) , cmap="jet")
+            if get_frame(current_frame):
+                im = ax.imshow( get_frame(current_frame) , cmap="jet")
         elif video_view_mode == "Maximum":
             im = ax.imshow( vdata_max , cmap="jet")
         elif video_view_mode == "Mean":
@@ -264,6 +280,35 @@ class MainWindow(QtWidgets.QMainWindow):
         #ax.set_ylim([videos[vi].height-1, 0])
         
         self.image_canvas.draw()
+    
+    def load_devices(self):
+        global devs
+        devs = devices.load_all()
+        
+        self.ui.listWidget.clear()
+        self.dev_items = []
+        for i in range(len(devs)):
+            text = "{f}\n{v} {n}".format( f=devs[i].function, v=devs[i].vendor, n=devs[i].name )
+            item = QListWidgetItem( text )
+            item.setFlags( QtCore.Qt.ItemIsEnabled|QtCore.Qt.ItemIsUserCheckable )
+            item.setCheckState( 2 )
+            
+            self.dev_items.append(item)
+            self.ui.listWidget.addItem( item )
+    
+    def update_selected_devices(self):
+        self.selected_dev_items = []
+        for i in range(len( self.dev_items )):
+            #print( self.dev_items[i].checkState() )
+            if self.dev_items[i].checkState():
+                self.selected_dev_items.append( devs[i] )
+        
+        """
+        # DEBUG OUTPUT
+        print( "-------------------------------------" )
+        for d in self.selected_dev_items:
+            print( d.uid )
+        """
 
 
 # ENTRY POINT

@@ -311,6 +311,19 @@
              </layout>
             </widget>
            </item>
+           <item>
+            <widget class="QProgressBar" name="progressBar">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="value">
+              <number>50</number>
+             </property>
+             <property name="textVisible">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
          <widget class="QWidget" name="tab_2">
@@ -683,6 +696,9 @@
                  </item>
                  <item row="2" column="2">
                   <widget class="QComboBox" name="comboBox_3">
+                   <property name="editable">
+                    <bool>false</bool>
+                   </property>
                    <item>
                     <property name="text">
                      <string>Particle</string>
@@ -752,6 +768,12 @@
                 <layout class="QGridLayout" name="gridLayout_7">
                  <item row="1" column="0">
                   <widget class="QListWidget" name="listWidget">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>256</height>
+                    </size>
+                   </property>
                    <property name="selectionRectVisible">
                     <bool>false</bool>
                    </property>
@@ -992,19 +1014,6 @@
         </widget>
        </item>
       </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QProgressBar" name="progressBar">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="value">
-       <number>100</number>
-      </property>
-      <property name="textVisible">
-       <bool>false</bool>
-      </property>
      </widget>
     </item>
    </layout>
