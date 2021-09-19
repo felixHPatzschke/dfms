@@ -11,11 +11,13 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from ui import mainwindow
-from util import tdms, devices
+from util import tdms, devices, objects
 
 
 
-video_descriptors = []
+obj_dsc = objects.Descriptor()
+
+#video_descriptors = []
 videos_loaded = []
 videos = []
 
@@ -78,9 +80,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_2.clicked.connect(self.load_devices)
         self.ui.listWidget.itemClicked.connect(self.update_selected_devices)
         
+        self.ui.exportButton.clicked.connect(self.export)
+        
         self.video_items = []
         self.dev_items = []
-        self.selected_dev_items = []
+        #self.selected_dev_items = []
         
         self.initialize_io_widgets()
         self.load_devices()
@@ -121,17 +125,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.plotWidget.setLayout(layout)
     
     def select_input_files(self):
-        global video_descriptors, videos_loaded, videos
+        global obj_dsc, videos_loaded, videos
         
         options = QFileDialog.Options()
         #options |= QFileDialog.DontUseNativeDialog
-        files, _ = QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", "","All Files (*);;TDMS Files (*.tdms)", options=options)
+        files, _ = QFileDialog.getOpenFileNames(self,"Select TDMS Files", "","TDMS Files (*.tdms);;All Files (*)", options=options)
         if files:
-            #video_descriptors = []
-            video_descriptors = tdms.files_to_descriptors(files)
+            #obj_dsc.videos = []
+            obj_dsc.videos = tdms.files_to_descriptors(files)
             videos_loaded = []
             videos = []
-            for i in range(len(video_descriptors)):
+            for i in range(len(obj_dsc.videos)):
                 videos_loaded.append(False)
                 videos.append( tdms.Video() )
             
@@ -146,11 +150,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.label_4.setText("{c} / {a}".format(c=current_frame, a=avail_frame_count()))
     
     def show_video_descriptors(self):
-        global video_descriptors
+        global obj_dsc
         
         self.video_items = []
         vidx = 0
-        for dsc in video_descriptors:
+        for dsc in obj_dsc.videos:
             top_level_entries = [ "Video {i}".format(i=vidx), "" ]
             children = []
             if dsc.data_format == tdms.Format.VIDEO:
@@ -190,11 +194,11 @@ class MainWindow(QtWidgets.QMainWindow):
     """
     
     def load_video_all(self):
-        self.load_videos( range(len(video_descriptors)) )
+        self.load_videos( range(len(obj_dsc.videos)) )
     
     def load_videos(self, indices):
-        global videos, videos_loaded, video_descriptors
-        #print("video_descriptors:\t{l}".format(l = len(video_descriptors)))
+        global videos, videos_loaded, obj_dsc
+        #print("video_descriptors:\t{l}".format(l = len(obj_dsc.videos)))
         #print("videos_loaded:\t{l}".format(l = len(videos_loaded)))
         #print("videos:\t{l}".format(l = len(videos)))
         
@@ -206,13 +210,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.progressBar.setValue( pos )
             
             for idx in indices:
-                videos[idx].load( video_descriptors[idx] )
+                videos[idx].load( obj_dsc.videos[idx] )
                 videos_loaded[idx] = True
                 pos += 1
                 self.ui.progressBar.setValue( pos )
         
         # debug output
-        for idx in range(len(video_descriptors)):
+        for idx in range(len(obj_dsc.videos)):
             print("Video {i}:".format(i=idx))
             if videos_loaded[idx]:
                 print("  {f} Frames".format(f=videos[idx].frames))
@@ -222,7 +226,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         maxs = []
         means = []
-        for i in range(len(video_descriptors)):
+        for i in range(len(obj_dsc.videos)):
             if videos_loaded[i]:
                 maxs.append( np.max( videos[i].data, axis=0 ) )
                 means.append( np.mean( videos[i].data, axis=0 ) )
@@ -254,10 +258,10 @@ class MainWindow(QtWidgets.QMainWindow):
         current_frame = self.ui.horizontalSlider.value()
         self.ui.label_4.setText("{c} / {a}".format(c=current_frame, a=avail_frame_count()))
         if current_frame < avail_frame_count():
-            print("Current Frame: {c}".format(c=current_frame))
-            vi, fi = indices_from_frame( current_frame )
-            print("    In Video   {v}".format(v=vi))
-            print("    Frame      {f}".format(f=fi))
+            #print("Current Frame: {c}".format(c=current_frame))
+            #vi, fi = indices_from_frame( current_frame )
+            #print("    In Video   {v}".format(v=vi))
+            #print("    Frame      {f}".format(f=fi))
             self.plot_image()
     
     def plot_image(self):
@@ -269,7 +273,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         if video_view_mode == "Frame":
             #vi, fi = indices_from_frame(current_frame)
-            if get_frame(current_frame):
+            if avail_frame_count() > 0:
                 im = ax.imshow( get_frame(current_frame) , cmap="jet")
         elif video_view_mode == "Maximum":
             im = ax.imshow( vdata_max , cmap="jet")
@@ -297,11 +301,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.listWidget.addItem( item )
     
     def update_selected_devices(self):
-        self.selected_dev_items = []
+        #self.selected_dev_items = []
+        global obj_dsc
+        obj_dsc.devices = []
         for i in range(len( self.dev_items )):
             #print( self.dev_items[i].checkState() )
             if self.dev_items[i].checkState():
-                self.selected_dev_items.append( devs[i] )
+                obj_dsc.devices.append( devs[i] )
         
         """
         # DEBUG OUTPUT
@@ -309,6 +315,9 @@ class MainWindow(QtWidgets.QMainWindow):
         for d in self.selected_dev_items:
             print( d.uid )
         """
+    
+    def export(self):
+        print( obj_dsc.serialize('j') )
 
 
 # ENTRY POINT
