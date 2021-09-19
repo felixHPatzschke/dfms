@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1481</width>
-    <height>989</height>
+    <height>1013</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -298,6 +298,13 @@
                <widget class="QPushButton" name="pushButton_5">
                 <property name="text">
                  <string>Load Selected Videos</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_6">
+                <property name="text">
+                 <string>Load All Videos</string>
                 </property>
                </widget>
               </item>
@@ -985,6 +992,19 @@
         </widget>
        </item>
       </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QProgressBar" name="progressBar">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="value">
+       <number>100</number>
+      </property>
+      <property name="textVisible">
+       <bool>false</bool>
+      </property>
      </widget>
     </item>
    </layout>
