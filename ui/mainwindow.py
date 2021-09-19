@@ -107,7 +107,7 @@ class Ui_MainWindow(object):
         item_0 = QtWidgets.QTreeWidgetItem(self.treeWidget)
         item_1 = QtWidgets.QTreeWidgetItem(item_0)
         item_1.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsDragEnabled|QtCore.Qt.ItemIsDropEnabled|QtCore.Qt.ItemIsEnabled)
-        self.treeWidget.header().setVisible(False)
+        self.treeWidget.header().setVisible(True)
         self.treeWidget.header().setCascadingSectionResizes(False)
         self.verticalLayout_7.addWidget(self.treeWidget)
         self.widget_8 = QtWidgets.QWidget(self.tab)

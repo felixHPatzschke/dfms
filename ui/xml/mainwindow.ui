@@ -205,7 +205,7 @@
            <item>
             <widget class="QTreeWidget" name="treeWidget">
              <attribute name="headerVisible">
-              <bool>false</bool>
+              <bool>true</bool>
              </attribute>
              <attribute name="headerCascadingSectionResizes">
               <bool>false</bool>
