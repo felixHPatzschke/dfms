@@ -10,6 +10,9 @@ pi = np.pi
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
+import pathlib
+import datetime
+
 from ui import mainwindow
 from util import tdms, devices, objects
 
@@ -76,6 +79,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.ui.horizontalSlider.valueChanged.connect(self.scrub_frames)
         self.ui.comboBox_2.currentTextChanged.connect(self.change_video_view_mode)
+        
+        self.ui.doubleSpinBox_x0.valueChanged.connect(self.move_x_box)
+        self.ui.doubleSpinBox_y0.valueChanged.connect(self.move_y_box)
         
         self.ui.pushButton_2.clicked.connect(self.load_devices)
         self.ui.listWidget.itemClicked.connect(self.update_selected_devices)
@@ -224,16 +230,24 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 print("  not loaded")
         
-        maxs = []
-        means = []
-        for i in range(len(obj_dsc.videos)):
-            if videos_loaded[i]:
-                maxs.append( np.max( videos[i].data, axis=0 ) )
-                means.append( np.mean( videos[i].data, axis=0 ) )
-        
-        global vdata_max, vdata_mean
-        vdata_max = np.max( np.array(maxs), axis=0)
-        vdata_mean = np.mean( np.array(means) , axis=0)
+        if indices:
+            maxs = []
+            means = []
+            for i in range(len(obj_dsc.videos)):
+                if videos_loaded[i]:
+                    maxs.append( np.max( videos[i].data, axis=0 ) )
+                    means.append( np.mean( videos[i].data, axis=0 ) )
+            
+            global vdata_max, vdata_mean
+            vdata_max = np.max( np.array(maxs), axis=0)
+            vdata_mean = np.mean( np.array(means) , axis=0)
+            
+            #obj_dsc.x = int( vdata_max.size[0] / 2 )
+            #obj_dsc.y = int( vdata_max.size[1] / 2 )
+            print( vdata_max.size )
+            obj_dsc.angle = 180.0
+            if obj_dsc.roi_width > np.min( vdata_max.size ):
+                obj_dsc.roi_width = np.min( vdata_max.size )
         
         self.ui.progressBar.setEnabled(False)
         
@@ -252,6 +266,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.label_4.setEnabled( framemode )
         
         self.plot_image()
+    
+    def move_x_box(self):
+        global obj_dsc
+        
+        obj_dsc.x = self.ui.doubleSpinBox_x0.value()
+        
+        self.plot_image()
+        #self.plot_preview()
+
+    def move_y_box(self):
+        global obj_dsc
+        
+        obj_dsc.y = self.ui.doubleSpinBox_y0.value()
+        
+        self.plot_image()
+        #self.plot_preview()
     
     def scrub_frames(self):
         global current_frame
@@ -317,7 +347,19 @@ class MainWindow(QtWidgets.QMainWindow):
         """
     
     def export(self):
-        print( obj_dsc.serialize('j') )
+        #obj_dsc.x = self.ui.doubleSpinBox_x0.value()
+        #obj_dsc.y = self.ui.doubleSpinBox_y0.value()
+        obj_dsc.particle.size = self.ui.lineEdit_3.text()
+        obj_dsc.particle.material = self.ui.lineEdit.text()
+        obj_dsc.particle.comment = self.ui.lineEdit_2.text()
+        obj_dsc.particle.ptype = self.ui.comboBox_3.currentText()
+        
+        date_string = datetime.datetime.fromtimestamp( pathlib.Path( obj_dsc.videos[0].data_file ).stat().st_mtime ).__format__('%y-%m-%d')
+        part_no = self.ui.spinBox_particleNo.value()
+        exportfile = open('out/objects/{DATE}-object{NR:04d}.json'.format(NR=part_no, DATE=date_string), "w")
+        exportfile.write( obj_dsc.serialize('json') )
+        exportfile.close()
+        self.ui.spinBox_particleNo.setValue(part_no + 1)
 
 
 # ENTRY POINT

@@ -16,7 +16,7 @@ class ParticleInfo:
     def __init__(self, **description):
         self.size = "unknown sized"
         self.material = "unknown"
-        self.ptype = "unknown"
+        self.ptype = "Particle"
         self.comment = ""
         
         self.set_info(**description)
