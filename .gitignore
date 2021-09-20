@@ -123,3 +123,4 @@ dmypy.json
 # Tests
 *Test.ipynb
 *test.ipynb
+ui/assemble_ui.sh
