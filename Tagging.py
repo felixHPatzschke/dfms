@@ -23,6 +23,9 @@ obj_dsc = objects.Descriptor()
 #video_descriptors = []
 videos_loaded = []
 videos = []
+NOT_INITIALIZED = -1
+videos_width = NOT_INITIALIZED 
+videos_height = NOT_INITIALIZED 
 
 vdata_max = np.zeros( (1,1,1) )
 vdata_mean = np.zeros( (1,1,1) )
@@ -30,6 +33,8 @@ current_frame = 0
 video_view_mode = "Frame"
 
 devs = []
+
+
 
 def avail_frame_count():
     res = 0
@@ -61,6 +66,25 @@ def get_frame(f):
     else:
         return False # TODO: raise a proper Error
 
+def draw_line( ax, x0, y0, alpha, dist, direction, shift ):
+    if direction == 0:
+        dx = np.cos( -2*pi*alpha/180.0 )
+        dy = np.sin( -2*pi*alpha/180.0 )
+    else: 
+        dx = -np.sin( -2*pi*alpha/180.0 )
+        dy = np.cos( -2*pi*alpha/180.0 )
+    l = np.max( np.array( [ videos_width, videos_height] ) )
+    
+    x0 += shift*dist*dy
+    y0 -= shift*dist*dx
+    
+    xa = x0 - l*dx
+    ya = y0 - l*dy
+    xb = x0 + l*dx
+    yb = y0 + l*dy
+    
+    ax.plot( [xa, xb], [ya, yb], c='w', ls=':', lw=1 )
+
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -82,6 +106,11 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.ui.doubleSpinBox_x0.valueChanged.connect(self.move_x_box)
         self.ui.doubleSpinBox_y0.valueChanged.connect(self.move_y_box)
+        self.ui.horizontalScrollBar.valueChanged.connect(self.move_x_scroll)
+        self.ui.verticalScrollBar.valueChanged.connect(self.move_y_scroll)
+        
+        self.ui.doubleSpinBox_alpha.valueChanged.connect(self.change_alpha)
+        self.ui.doubleSpinBox_d.valueChanged.connect(self.change_d)
         
         self.ui.pushButton_2.clicked.connect(self.load_devices)
         self.ui.listWidget.itemClicked.connect(self.update_selected_devices)
@@ -94,6 +123,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.initialize_io_widgets()
         self.load_devices()
+        
+        self.ui.tabWidget.setCurrentIndex(0)
     
     def initialize_io_widgets(self):
         self.ui.progressBar.setValue(0)
@@ -112,7 +143,9 @@ class MainWindow(QtWidgets.QMainWindow):
             btn.setEnabled(self.input_files_selected)
         
         # Alignment Tab
-        # nothing to do here, example values are already reasonable
+        self.ui.doubleSpinBox_d.setValue(3)
+        self.ui.doubleSpinBox_d.setValue(21)
+        # nothing else to do here, example values are already reasonable
         
         # Type and Corrections Tab
         self.ui.listWidget.clear()
@@ -131,7 +164,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.plotWidget.setLayout(layout)
     
     def select_input_files(self):
-        global obj_dsc, videos_loaded, videos
+        global obj_dsc, videos_loaded, videos, videos_width, videos_height
+        
+        videos_width = NOT_INITIALIZED
+        videos_height = NOT_INITIALIZED
         
         options = QFileDialog.Options()
         #options |= QFileDialog.DontUseNativeDialog
@@ -203,7 +239,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_videos( range(len(obj_dsc.videos)) )
     
     def load_videos(self, indices):
-        global videos, videos_loaded, obj_dsc
+        global videos, videos_loaded, obj_dsc, videos_width, videos_height
         #print("video_descriptors:\t{l}".format(l = len(obj_dsc.videos)))
         #print("videos_loaded:\t{l}".format(l = len(videos_loaded)))
         #print("videos:\t{l}".format(l = len(videos)))
@@ -218,10 +254,19 @@ class MainWindow(QtWidgets.QMainWindow):
             for idx in indices:
                 videos[idx].load( obj_dsc.videos[idx] )
                 videos_loaded[idx] = True
+                if videos_width == NOT_INITIALIZED:
+                    videos_width = videos[idx].width
+                    videos_height = videos[idx].height
+                else:
+                    if not ( (videos_width == videos[idx].width) and (videos_height == videos[idx].height) ):
+                        print( "WARNING: video {i} does not have the same dimensions as the previously loaded data!".format(i=idx) )
+                        videos_loaded[idx] = False
+                        # TODO: actually handle the error
                 pos += 1
                 self.ui.progressBar.setValue( pos )
         
         # debug output
+        """
         for idx in range(len(obj_dsc.videos)):
             print("Video {i}:".format(i=idx))
             if videos_loaded[idx]:
@@ -229,6 +274,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 print("  {w}x{h} px".format(w=videos[idx].width, h=videos[idx].height))
             else:
                 print("  not loaded")
+        """
         
         if indices:
             maxs = []
@@ -242,12 +288,22 @@ class MainWindow(QtWidgets.QMainWindow):
             vdata_max = np.max( np.array(maxs), axis=0)
             vdata_mean = np.mean( np.array(means) , axis=0)
             
-            #obj_dsc.x = int( vdata_max.size[0] / 2 )
-            #obj_dsc.y = int( vdata_max.size[1] / 2 )
-            print( vdata_max.size )
+            obj_dsc.x = int( videos_width / 2 )
+            obj_dsc.y = int( videos_height / 2 )
+            #print( vdata_max.size )
             obj_dsc.angle = 180.0
             if obj_dsc.roi_width > np.min( vdata_max.size ):
                 obj_dsc.roi_width = np.min( vdata_max.size )
+            
+            self.ui.horizontalScrollBar.setMinimum(0)
+            self.ui.horizontalScrollBar.setMaximum(videos_width-1)
+            self.ui.horizontalScrollBar.setValue( obj_dsc.x )
+            self.ui.doubleSpinBox_x0.setMaximum(videos_width-1)
+        
+            self.ui.verticalScrollBar.setMinimum(0)
+            self.ui.verticalScrollBar.setMaximum(videos_height-1)
+            self.ui.verticalScrollBar.setValue( obj_dsc.y )
+            self.ui.doubleSpinBox_y0.setMaximum(videos_height-1)
         
         self.ui.progressBar.setEnabled(False)
         
@@ -267,6 +323,18 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.plot_image()
     
+    def move_x_scroll(self):
+        global obj_dsc
+        
+        obj_dsc.x = self.ui.horizontalScrollBar.value()
+        self.ui.doubleSpinBox_x0.setValue(obj_dsc.x)
+    
+    def move_y_scroll(self):
+        global obj_dsc
+        
+        obj_dsc.y = self.ui.verticalScrollBar.value()
+        self.ui.doubleSpinBox_y0.setValue(obj_dsc.y)
+    
     def move_x_box(self):
         global obj_dsc
         
@@ -274,12 +342,24 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.plot_image()
         #self.plot_preview()
-
+    
     def move_y_box(self):
         global obj_dsc
         
         obj_dsc.y = self.ui.doubleSpinBox_y0.value()
         
+        self.plot_image()
+        #self.plot_preview()
+    
+    def change_alpha(self):
+        global obj_dsc
+        obj_dsc.angle = -1.0*self.ui.doubleSpinBox_alpha.value()
+        self.plot_image()
+        #self.plot_preview()
+    
+    def change_d(self):
+        global obj_dsc
+        obj_dsc.roi_width = self.ui.doubleSpinBox_d.value()
         self.plot_image()
         #self.plot_preview()
     
@@ -295,25 +375,35 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plot_image()
     
     def plot_image(self):
-        self.image_figure.clear()
-        ax = self.image_figure.add_subplot(111)
-        self.image_figure.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
-        
-        ax.set_axis_off()
-        
-        if video_view_mode == "Frame":
-            #vi, fi = indices_from_frame(current_frame)
-            if avail_frame_count() > 0:
+        if avail_frame_count() > 0:
+            self.image_figure.clear()
+            #self.image_figure.set_facecolor('black')
+            ax = self.image_figure.add_subplot(111)
+            self.image_figure.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
+            
+            ax.set_axis_off()
+            
+            if video_view_mode == "Frame":
+                #vi, fi = indices_from_frame(current_frame)
                 im = ax.imshow( get_frame(current_frame) , cmap="jet")
-        elif video_view_mode == "Maximum":
-            im = ax.imshow( vdata_max , cmap="jet")
-        elif video_view_mode == "Mean":
-            im = ax.imshow( vdata_mean , cmap="jet")
-        
-        #ax.set_xlim([0, videos[vi].width-1])
-        #ax.set_ylim([videos[vi].height-1, 0])
-        
-        self.image_canvas.draw()
+            elif video_view_mode == "Maximum":
+                im = ax.imshow( vdata_max , cmap="jet")
+            elif video_view_mode == "Mean":
+                im = ax.imshow( vdata_mean , cmap="jet")
+            
+            # draw crosshairs
+            x0, y0 = obj_dsc.x, obj_dsc.y
+            alpha = obj_dsc.angle
+            dist = 0.5*(obj_dsc.roi_width-1)
+            
+            for direction in [0,1]:
+                for shift in [0, -1, 1]:
+                    draw_line( ax, x0, y0, alpha, dist, direction, shift )
+            
+            ax.set_xlim( [ -0.5, videos_width-0.5 ] )
+            ax.set_ylim( [ videos_height-0.5, -0.5 ] )
+            
+            self.image_canvas.draw()
     
     def load_devices(self):
         global devs
