@@ -66,22 +66,36 @@ def get_frame(f):
     else:
         return False # TODO: raise a proper Error
 
-def draw_line( ax, x0, y0, alpha, dist, direction, shift, color ):
+def draw_guide_line( ax, x0, y0, alpha, dist, direction, shift, color ):
     if direction == 0:
-        dx = np.cos( -pi*alpha/180.0 )
-        dy = np.sin( -pi*alpha/180.0 )
+        dx = np.cos( pi*alpha/180.0 )
+        dy = np.sin( pi*alpha/180.0 )
     else: 
-        dx = -np.sin( -pi*alpha/180.0 )
-        dy = np.cos( -pi*alpha/180.0 )
+        dx = -np.sin( pi*alpha/180.0 )
+        dy = np.cos( pi*alpha/180.0 )
     l = np.max( np.array( [ videos_width, videos_height] ) )
     
     x0 += shift*dist*dy
     y0 -= shift*dist*dx
     
-    xa = x0 - l*dx
-    ya = y0 - l*dy
-    xb = x0 + l*dx
-    yb = y0 + l*dy
+    if direction==0: # lines to show the ROI
+        fwd = l
+        if shift==0: # central line, used for aiming
+            bwd = l
+        else:        # bounding box
+            bwd = dist
+    else:            # orthogonal lines
+        if shift==0: # central line, used for aiming
+            fwd = l
+            bwd = l
+        else:        # bounding box
+            fwd = dist
+            bwd = dist
+
+    xa = x0 - bwd*dx
+    ya = y0 - bwd*dy
+    xb = x0 + fwd*dx
+    yb = y0 + fwd*dy
     
     ax.plot( [xa, xb], [ya, yb], c=color, ls=':', lw=1 )
 
@@ -397,8 +411,8 @@ class MainWindow(QtWidgets.QMainWindow):
             dist = 0.5*(obj_dsc.roi_width-1)
             
             for shift in [0, -1, 1]:
-                draw_line( ax, x0, y0, alpha, dist, 0, shift, 'w' )
-                draw_line( ax, x0, y0, alpha, dist, 1, shift, 'grey' )
+                for direction in [0, 1]:
+                    draw_guide_line( ax, x0, y0, alpha, dist, direction, shift, 'w' )
             
             ax.set_xlim( [ -0.5, videos_width-0.5 ] )
             ax.set_ylim( [ videos_height-0.5, -0.5 ] )
