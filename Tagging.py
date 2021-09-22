@@ -66,13 +66,13 @@ def get_frame(f):
     else:
         return False # TODO: raise a proper Error
 
-def draw_line( ax, x0, y0, alpha, dist, direction, shift ):
+def draw_line( ax, x0, y0, alpha, dist, direction, shift, color ):
     if direction == 0:
-        dx = np.cos( -2*pi*alpha/180.0 )
-        dy = np.sin( -2*pi*alpha/180.0 )
+        dx = np.cos( -pi*alpha/180.0 )
+        dy = np.sin( -pi*alpha/180.0 )
     else: 
-        dx = -np.sin( -2*pi*alpha/180.0 )
-        dy = np.cos( -2*pi*alpha/180.0 )
+        dx = -np.sin( -pi*alpha/180.0 )
+        dy = np.cos( -pi*alpha/180.0 )
     l = np.max( np.array( [ videos_width, videos_height] ) )
     
     x0 += shift*dist*dy
@@ -83,7 +83,7 @@ def draw_line( ax, x0, y0, alpha, dist, direction, shift ):
     xb = x0 + l*dx
     yb = y0 + l*dy
     
-    ax.plot( [xa, xb], [ya, yb], c='w', ls=':', lw=1 )
+    ax.plot( [xa, xb], [ya, yb], c=color, ls=':', lw=1 )
 
 
 
@@ -396,9 +396,9 @@ class MainWindow(QtWidgets.QMainWindow):
             alpha = obj_dsc.angle
             dist = 0.5*(obj_dsc.roi_width-1)
             
-            for direction in [0,1]:
-                for shift in [0, -1, 1]:
-                    draw_line( ax, x0, y0, alpha, dist, direction, shift )
+            for shift in [0, -1, 1]:
+                draw_line( ax, x0, y0, alpha, dist, 0, shift, 'w' )
+                draw_line( ax, x0, y0, alpha, dist, 1, shift, 'grey' )
             
             ax.set_xlim( [ -0.5, videos_width-0.5 ] )
             ax.set_ylim( [ videos_height-0.5, -0.5 ] )
@@ -411,12 +411,14 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.ui.listWidget.clear()
         self.dev_items = []
-        for i in range(len(devs)):
-            text = "{f}\n{v} {n}".format( f=devs[i].function, v=devs[i].vendor, n=devs[i].name )
+        self.dev_ids = []
+        for id in devs:
+            text = "{f}\n{v} {n}".format( f=devs[id].function, v=devs[id].vendor, n=devs[id].name )
             item = QListWidgetItem( text )
             item.setFlags( QtCore.Qt.ItemIsEnabled|QtCore.Qt.ItemIsUserCheckable )
             item.setCheckState( 2 )
             
+            self.dev_ids.append( devs[id].uid )
             self.dev_items.append(item)
             self.ui.listWidget.addItem( item )
     
@@ -427,7 +429,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(len( self.dev_items )):
             #print( self.dev_items[i].checkState() )
             if self.dev_items[i].checkState():
-                obj_dsc.devices.append( devs[i] )
+                obj_dsc.devices.append( devs[ self.dev_ids[i] ] )
         
         """
         # DEBUG OUTPUT

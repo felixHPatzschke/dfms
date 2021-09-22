@@ -186,7 +186,17 @@ def load(filename):
     inputfile.close()
     return dev
 
+"""
 def load_all():
     filenames = os.listdir( persistent_data_path )
     devices = [ load( "{d}/{f}".format( d=persistent_data_path, f=fn ) ) for fn in filenames ]
+    return devices
+"""
+
+def load_all():
+    filenames = os.listdir( persistent_data_path )
+    devices = {}
+    for fn in filenames:
+        dev = load( "{d}/{f}".format( d=persistent_data_path, f=fn ) )
+        devices[dev.uid] = dev
     return devices
