@@ -426,13 +426,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.listWidget.clear()
         self.dev_items = []
         self.dev_ids = []
-        for id in devs:
-            text = "{f}\n{v} {n}".format( f=devs[id].function, v=devs[id].vendor, n=devs[id].name )
+        for ID in devs:
+            text = "{f}\n{v} {n}".format( f=devs[ID].function, v=devs[ID].vendor, n=devs[ID].name )
             item = QListWidgetItem( text )
             item.setFlags( QtCore.Qt.ItemIsEnabled|QtCore.Qt.ItemIsUserCheckable )
             item.setCheckState( 2 )
             
-            self.dev_ids.append( devs[id].uid )
+            self.dev_ids.append( devs[ID].uid )
             self.dev_items.append(item)
             self.ui.listWidget.addItem( item )
     
