@@ -205,4 +205,69 @@ class Video:
 
 
 
+class VideoSeries(Video):
+    def __init__(self):
+        super().__init__()
+        self.descriptors = []
+        self.valid = True
+        self.loaded = False
     
+    def load_from_tdms_file(self, contents, tdms_file):
+        return self
+    
+    def load(self, descriptors):
+        self.descriptors = descriptors
+        if self.descriptors:
+            videos = [ Video().load(d) for d in self.descriptors ]
+            
+            """
+            check that the loaded videos have the same format
+            and sum up the frame count while we're iterating anyway
+            """
+            for v in videos:
+                if not v.width == self.width:
+                    if self.width == 0:
+                        self.width = v.width
+                    else:
+                        self.valid = False
+                
+                if not v.height == self.height:
+                    if self.height == 0:
+                        self.height = v.height
+                    else:
+                        self.valid = False
+                
+                if not v.kinetic_cycle == self.kinetic_cycle:
+                    if self.kinetic_cycle == 0:
+                        self.kinetic_cycle = v.kinetic_cycle
+                    else:
+                        print("kinetic_cycle not equal (maybe not critical? proceeding...)")
+                        #self.valid = False
+                
+                if not v.exposure == self.exposure:
+                    if self.exposure == 0:
+                        self.exposure = v.exposure
+                    else:
+                        print("exposure not equal (maybe not critical? proceeding...)")
+                        #self.valid = False
+                
+                if not v.binning == self.binning:
+                    if self.binning == 0:
+                        self.binning = v.binning
+                    else:
+                        self.valid = False
+                
+                if self.valid:
+                    self.frames += v.frames
+            
+            if self.valid:
+                self.framerate = 1.0/self.kinetic_cycle
+                
+                self.data = np.zeros( (self.frames, self.width, self.height) )
+                begin_frame = 0
+                for v in videos:
+                    self.data[ begin_frame:begin_frame+v.frames, :, : ] = np.swapaxes( v.data, 1, 2 )
+                    begin_frame += v.frames
+            
+            self.loaded = True
+        return self
