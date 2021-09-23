@@ -15,13 +15,13 @@ import warnings
 
 
 class Content(int, Flag):
-    FULL_DATA: int = auto()
-    ROI_DATA: int = auto()
-    METADATA: int = auto()
+    FULL_DATA: int = 1
+    ROI_DATA: int = 2
+    METADATA: int = 4
 
 class Format(int, Flag):
-    VIDEO: int = auto()
-    MODULE: int = auto()
+    VIDEO: int = 1
+    MODULE: int = 2
 
 class Descriptor:
     def __init__(self):
