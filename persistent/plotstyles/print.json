@@ -182,9 +182,10 @@
         "fantasy"
     ],
     "font.monospace": [
+        "Computer Modern Typewriter",
+        "CMU Typewriter Text",
         "DejaVu Sans Mono",
         "Bitstream Vera Sans Mono",
-        "Computer Modern Typewriter",
         "Andale Mono",
         "Nimbus Mono L",
         "Courier New",
@@ -194,9 +195,10 @@
         "monospace"
     ],
     "font.sans-serif": [
+        "Computer Modern Sans Serif",
+        "CMU Sans Serif",
         "DejaVu Sans",
         "Bitstream Vera Sans",
-        "Computer Modern Sans Serif",
         "Lucida Grande",
         "Verdana",
         "Geneva",
@@ -207,9 +209,10 @@
         "sans-serif"
     ],
     "font.serif": [
+        "Computer Modern Roman",
+        "CMU Serif",
         "DejaVu Serif",
         "Bitstream Vera Serif",
-        "Computer Modern Roman",
         "New Century Schoolbook",
         "Century Schoolbook L",
         "Utopia",
@@ -222,7 +225,7 @@
         "Charter",
         "serif"
     ],
-    "font.size": 10.0,
+    "font.size": 11.0,
     "font.stretch": "normal",
     "font.style": "normal",
     "font.variant": "normal",
@@ -351,7 +354,7 @@
     "mathtext.default": "it",
     "mathtext.fallback": "cm",
     "mathtext.fallback_to_cm": null,
-    "mathtext.fontset": "dejavusans",
+    "mathtext.fontset": "cm",
     "mathtext.it": "sans:italic",
     "mathtext.rm": "sans",
     "mathtext.sf": "sans",
