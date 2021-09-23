@@ -45,6 +45,13 @@ class ParticleInfo:
                     'class':self.ptype,
                     'comment':self.comment
                 }
+    
+    def from_dict(self, d):
+        self.size = d['size']
+        self.material = d['material']
+        self.ptype = d['class']
+        self.comment = d['comment']
+        return self
 
 
 
@@ -68,13 +75,34 @@ class Descriptor:
                     '1st-order':{
                         'angle':self.angle,
                         'ref-offset':self.sref,
-                        'ref_wavelength':self.ldaref
+                        'ref-wavelength':self.ldaref
                     },
                     'img_width':self.roi_width,
                     'particle':self.particle.to_dict(),
                     'devices':[ device.uid for device in self.devices ]
                 }
 
+    def from_dict(self, d):
+        #self.videos = []
+        #for f in d['files']:
+        #    self.videos.append( tdms.Descriptor().from_dict(f) )
+        self.videos = [ tdms.Descriptor().from_dict(f) for f in d['files'] ]
+        self.x = d['0th-order'][0]
+        self.y = d['0th-order'][1]
+        self.angle = d['1st-order']['angle']
+        self.sref = d['1st-order']['ref-offset']
+        self.ldaref = d['1st-order']['ref-wavelength']
+        self.roi_width = d['img_width']
+        self.particle = ParticleInfo().from_dict(d['particle'])
+        
+        all_devices = devices.load_all()
+        self.devices = []
+        for uid in d['devices']:
+            self.devices.append( all_devices[uid] )
+        
+        return self
+        
+    
     def serialize(self, *args, **kwargs):
         # dtermine desired output format
         output_format = 'json'
@@ -98,6 +126,7 @@ class Descriptor:
             return pickle.dumps(self)
         else:
             return ""
+
 
 class Object:
     def __init__(self):

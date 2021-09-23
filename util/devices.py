@@ -101,7 +101,14 @@ class Descriptor:
         return "{f}: {v} {n}".format( f=self.function, v=self.vendor, n=self.name )
     
     def to_dict(self):
-        return { 'vendor':self.vendor, 'name':self.name, 'function':self.function }
+        return { 'vendor':self.vendor, 'name':self.name, 'function':self.function, 'uid':self.uid }
+
+    def from_dict(self, d):
+        self.vendor = d['vendor']
+        self.name= d['name']
+        self.function= d['function']
+        self.uid= d['uid']
+        return self
 
 # characteristic spectra of optical components involved, such as
 #  -> light sources

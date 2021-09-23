@@ -38,6 +38,12 @@ class Descriptor:
     def to_dict(self):
         return { 'format' : self.data_format, 'data' : self.data_file, 'meta' : self.metadata_file }
 
+    def from_dict(self, d):
+        self.data_format = d['format']
+        self.data_file = d['data']
+        self.metadata_file = d['meta']
+        return self
+
 
 # turn a list of filenames into a list of descriptors
 # assume default file name scheme
