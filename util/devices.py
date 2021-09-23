@@ -183,14 +183,12 @@ persistent_data_path = "persistent/devices/"
 
 def export(dev):
     filename = "{d}/{u}.pickle".format( d=persistent_data_path, u=dev.uid )
-    exportfile = open( filename, 'wb' )
-    exportfile.write( pickle.dumps(dev) )
-    exportfile.close()
+    with open( filename, 'wb' ) as exportfile:
+        exportfile.write( pickle.dumps(dev) )
 
 def load(filename):
-    inputfile = open( filename, 'rb' )
-    dev = pickle.loads( inputfile.read() )
-    inputfile.close()
+    with open( filename, 'rb' ) as inputfile:
+        dev = pickle.loads( inputfile.read() )
     return dev
 
 """
