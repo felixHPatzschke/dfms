@@ -443,7 +443,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(len( self.dev_items )):
             #print( self.dev_items[i].checkState() )
             if self.dev_items[i].checkState():
-                obj_dsc.devices.append( devs[ self.dev_ids[i] ] )
+                obj_dsc.devices.append( self.dev_ids[i] )
         
         """
         # DEBUG OUTPUT

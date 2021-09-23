@@ -79,7 +79,7 @@ class Descriptor:
                     },
                     'img_width':self.roi_width,
                     'particle':self.particle.to_dict(),
-                    'devices':[ device.uid for device in self.devices ]
+                    'devices':self.devices
                 }
 
     def from_dict(self, d):
@@ -94,14 +94,8 @@ class Descriptor:
         self.ldaref = d['1st-order']['ref-wavelength']
         self.roi_width = d['img_width']
         self.particle = ParticleInfo().from_dict(d['particle'])
-        
-        all_devices = devices.load_all()
-        self.devices = []
-        for uid in d['devices']:
-            self.devices.append( all_devices[uid] )
-        
+        self.devices = d['devices']
         return self
-        
     
     def serialize(self, *args, **kwargs):
         # dtermine desired output format
