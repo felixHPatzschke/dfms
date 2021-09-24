@@ -65,7 +65,7 @@
     "axes.titlesize": "large",
     "axes.titleweight": "normal",
     "axes.titley": null,
-    "axes.unicode_minus": true,
+    "axes.unicode_minus": false,
     "axes.xmargin": 0.05,
     "axes.ymargin": 0.05,
     "axes.zmargin": 0.05,
@@ -457,7 +457,7 @@
     "nonstandard_params": {
         "asymm_cmap":"hot_r",
         "symm_cmap":"seismic",
-        "monochrome_cmap":"hot_r",
+        "monochrome_cmap":"gist_heat_r",
         "width":12,
         "error_range_alpha":0.2
     }
