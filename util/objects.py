@@ -205,11 +205,11 @@ class Object:
             return self.ROI[ : , : , 0:self.ROI.shape[1] ]
     
     def subtract_background(self):
-        if o.roi_generated:
-            bg_upper = o.ROI[ : , 0 , : ]
-            bg_lower = o.ROI[ : ,-1 , : ]
+        if self.roi_generated:
+            bg_upper = self.ROI[ : , 0 , : ]
+            bg_lower = self.ROI[ : ,-1 , : ]
 
-            bg = np.empty_like( o.ROI )
+            bg = np.empty_like( self.ROI )
             for y in range( bg.shape[1] ):
                 a_lower = y/( bg.shape[1]-1 )
                 a_upper = 1-a_lower
