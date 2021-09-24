@@ -1,6 +1,7 @@
 
 # For math things
 import numpy as np
+from numpy import pi as pi
 
 # for serialization and deserialization
 import json
@@ -98,7 +99,7 @@ class Descriptor:
         return self
     
     def serialize(self, *args, **kwargs):
-        # dtermine desired output format
+        # determine desired output format
         output_format = 'json'
         for arg in args:
             if arg in [ 'j', 'J', 'json', 'Json', 'JSON' ]:
@@ -125,7 +126,97 @@ class Descriptor:
 class Object:
     def __init__(self):
         self.descriptor = Descriptor()
+        self.video = tdms.VideoSeries()
+        self.correction = devices.Correction()
+        
+        self.MAX_LDA = 0.0
+        self.roi_generated = False
+        self.ROI = self.data = np.zeros( (1,1,1) )
+        self.LDA = self.data = np.zeros( (1,1,1) )
+        
+    def gen_roi_coords(self, MAX_LDA = False):
+        if not MAX_LDA:
+            MAX_LDA = self.MAX_LDA
 
+        dim = [
+                  int(self.descriptor.roi_width + self.descriptor.sref*MAX_LDA/self.descriptor.ldaref),
+                  int(self.descriptor.roi_width)
+              ]
+        
+        # ranges of X and Y coordinates
+        X1 = np.arange( dim[0] ) - (self.descriptor.roi_width-1)/2
+        Y1 = np.arange( dim[1] ) - (self.descriptor.roi_width-1)/2
+        
+        # areas of X and Y coordinates
+        X2, Y2 = np.meshgrid( X1, Y1 )
+        
+        # apply rotation
+        X3 = np.cos( pi/180.0*self.descriptor.angle )*X2 - np.sin( pi/180.0*self.descriptor.angle )*Y2
+        Y3 = np.cos( pi/180.0*self.descriptor.angle )*Y2 + np.sin( pi/180.0*self.descriptor.angle )*X2
+        
+        # apply translation
+        X3 = X3 + self.descriptor.x
+        Y3 = Y3 + self.descriptor.y
+        
+        LDA = X2*self.descriptor.ldaref/self.descriptor.sref
+        
+        return X3, Y3, LDA
+    
+    def gen_roi(self, MAX_LDA = 900.0, k=3):
+        self.MAX_LDA = MAX_LDA
+        X, Y, self.LDA = self.gen_roi_coords(self.MAX_LDA)
+        
+        roi_data = np.zeros( ( self.video.frames, X.shape[0], X.shape[1] ) )
+        for F in range( self.video.frames ):
+            roi_data[ F, :, : ] = self.video.interpolate( F, Y, X, k )
+        
+        #return roi_data, LDA
+        self.ROI = roi_data
+        self.roi_generated = True
+        return self
+    
+    def roi_extent(self, MAX_LDA = False):
+        if not MAX_LDA:
+            MAX_LDA = self.MAX_LDA
+
+        origin = (self.descriptor.roi_width-1)/2
+        
+        left = -0.5 - origin
+        right = int(self.descriptor.roi_width + self.descriptor.sref*MAX_LDA/self.descriptor.ldaref) - 0.5 - origin
+        bottom = int(self.descriptor.roi_width) - 0.5 - origin
+        top = -0.5 - origin
+        
+        return ( left, right, bottom, top )
+    
+    def roi(self, MAX_LDA = False):
+        if not MAX_LDA:
+            if self.roi_generated:
+                MAX_LDA = self.MAX_LDA
+            else:
+                self.MAX_LDA = 900
+                MAX_LDA = 900
+        
+        if ( not MAX_LDA == self.MAX_LDA ) or ( not self.roi_generated ):
+            self.gen_roi(MAX_LDA)
+        return self.ROI
+    
+    def zeroth_order(self):
+        if self.roi_generated:
+            return self.ROI[ : , : , 0:self.ROI.shape[1] ]
+    
+    def subtract_background(self):
+        if o.roi_generated:
+            bg_upper = o.ROI[ : , 0 , : ]
+            bg_lower = o.ROI[ : ,-1 , : ]
+
+            bg = np.empty_like( o.ROI )
+            for y in range( bg.shape[1] ):
+                a_lower = y/( bg.shape[1]-1 )
+                a_upper = 1-a_lower
+                bg[ : , y , : ] = a_lower*bg_lower + a_upper*bg_upper
+            self.ROI -= bg
+
+        return self
 
 
 

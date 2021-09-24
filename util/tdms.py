@@ -1,6 +1,7 @@
 
 # For math things
 import numpy as np
+from scipy import interpolate
 
 # For TDMS file I/O
 import nptdms
@@ -212,6 +213,7 @@ class VideoSeries(Video):
         self.valid = True
         self.loaded = False
     
+    # empty override
     def load_from_tdms_file(self, contents, tdms_file):
         return self
     
@@ -263,11 +265,25 @@ class VideoSeries(Video):
             if self.valid:
                 self.framerate = 1.0/self.kinetic_cycle
                 
-                self.data = np.zeros( (self.frames, self.width, self.height) )
+                #self.data = np.zeros( (self.frames, self.width, self.height) )
+                self.data = np.zeros( (self.frames, self.height, self.width) )
                 begin_frame = 0
                 for v in videos:
-                    self.data[ begin_frame:begin_frame+v.frames, :, : ] = np.swapaxes( v.data, 1, 2 )
+                    #self.data[ begin_frame:begin_frame+v.frames, :, : ] = np.swapaxes( v.data, 1, 2 )
+                    self.data[ begin_frame:begin_frame+v.frames, :, : ] = v.data
                     begin_frame += v.frames
             
+            del videos
             self.loaded = True
         return self
+    
+    def interpolate(self, F, Y, X, k=3):
+        x1d = np.arange( self.height )
+        y1d = np.arange( self.width )
+        
+        #x,y = np.meshgrid( x1d, y1d )
+        z = self.data[ F, :, : ]
+        
+        interp = interpolate.RectBivariateSpline( x1d, y1d, z, kx=k, ky=k )
+        
+        return interp(Y, X, grid=False)
