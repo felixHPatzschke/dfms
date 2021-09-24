@@ -2,6 +2,9 @@
 # For math things
 import numpy as np
 from scipy import interpolate
+# used once in interpolation
+# TODO: maybe find the numpy equivalent to improve performace
+import math
 
 # For TDMS file I/O
 import nptdms
@@ -276,6 +279,22 @@ class VideoSeries(Video):
             del videos
             self.loaded = True
         return self
+    
+    def interpolateXY(self, x, y):
+        xf = math.floor(x)
+        yf = math.floor(y)
+
+        xm = x-xf
+        ym = y-yf
+        
+        # If this is a bad way to do it, why is is so easy?
+        try:
+            va = (1-xm)*self.data[:,xf,yf]   + (xm)*self.data[:,xf+1,yf]
+            vb = (1-xm)*self.data[:,xf,yf+1] + (xm)*self.data[:,xf+1,yf+1]
+            return (1-ym)*va + (ym)*vb
+        except IndexError:
+            #return 0
+            return np.min( self.data, axis=(1,2) ) # should get rid of the divide-by-zero error
     
     def interpolate(self, F, Y, X, k=3):
         x1d = np.arange( self.height )
