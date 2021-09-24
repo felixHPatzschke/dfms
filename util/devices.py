@@ -205,3 +205,35 @@ def load_all():
         dev = load( "{d}/{f}".format( d=persistent_data_path, f=fn ) )
         devices[dev.uid] = dev
     return devices
+
+
+class Correction:
+    def __init__(self):
+        self.devices = []
+        self.ldamin = 0.0
+        self.ldamax = 1500.0
+    
+    def add_device(self, dev):
+        self.ldamin = np.maximum( self.ldamin, dev.ldamin )
+        self.ldamax = np.minimum( self.ldamax, dev.ldamax )
+        self.devices.append( dev )
+    
+    def evaluate(self, LDA):
+        vals = []
+        errs = []
+        for dev in self.devices:
+            val, err = dev.evaluate( LDA )
+            vals.append( val )
+            errs.append( err )
+        
+        vals = np.array(vals)
+        errs = np.array(errs)
+        
+        val = np.prod(vals, axis=0)
+
+        errs /= vals
+        errs *= val
+        err = np.sum(errs, axis=0)
+        
+        return val, err
+        
