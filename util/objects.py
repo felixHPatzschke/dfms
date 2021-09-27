@@ -7,6 +7,8 @@ from numpy import pi as pi
 import json
 import pickle
 
+from enum import Flag, auto
+
 from util import tdms, devices
 
 
@@ -53,6 +55,13 @@ class ParticleInfo:
         self.ptype = d['class']
         self.comment = d['comment']
         return self
+
+
+
+class Region(int, Flag):
+    ROI: int = 1
+    SPOT: int = 2
+    STREAK: int = 4
 
 
 
@@ -130,16 +139,42 @@ class Object:
         self.correction = devices.Correction()
         
         self.MAX_LDA = 0.0
+        self.streak_begin_idx : int = 0
+        #self.streak_end_idx : int = 0
         self.roi_generated = False
         self.ROI = self.data = np.zeros( (1,1,1) )
-        self.LDA = self.data = np.zeros( (1,1,1) )
+        self.LDA = self.data = np.zeros( (1) )
         
+        self.index = 0
+    
+    def px_to_lda(self):
+        if self.descriptor.sref == 0.0:
+            return 1.0
+        else:
+            return self.descriptor.ldaref/self.descriptor.sref
+    
+    def lda_to_px(self):
+        if self.descriptor.ldaref == 0.0:
+            return 1.0
+        else:
+            return self.descriptor.sref/self.descriptor.ldaref
+    
+    def gen_streak_limit_idxs(self):
+        #if self.streak_begin_idx == 0:
+        self.streak_begin_idx = 0
+        while self.LDA[ self.streak_begin_idx ] < self.correction.ldamin:
+            self.streak_begin_idx += 1
+        
+        #self.streak_end_idx = self.LDA.shape - 1
+        #while self.LDA[ self.streak_end_idx ] > self.correction.ldamin:
+        #    self.streak_begin_idx += 1
+    
     def gen_roi_coords(self, MAX_LDA = False):
         if not MAX_LDA:
             MAX_LDA = self.MAX_LDA
-
+        
         dim = [
-                  int(self.descriptor.roi_width + self.descriptor.sref*MAX_LDA/self.descriptor.ldaref),
+                  int(self.descriptor.roi_width + MAX_LDA*self.lda_to_px()),
                   int(self.descriptor.roi_width)
               ]
         
@@ -158,7 +193,7 @@ class Object:
         X3 = X3 + self.descriptor.x
         Y3 = Y3 + self.descriptor.y
         
-        LDA = X2*self.descriptor.ldaref/self.descriptor.sref
+        LDA = X1*self.px_to_lda()
         
         return X3, Y3, LDA
     
@@ -169,6 +204,10 @@ class Object:
         roi_data = np.zeros( ( self.video.frames, X.shape[0], X.shape[1] ) )
         for F in range( self.video.frames ):
             roi_data[ F, :, : ] = self.video.interpolate( F, Y, X, k )
+        #for xi in range( X.shape[0] ):
+        #    for yi in range( X.shape[1] ):
+        #        roi_data[ : , xi, yi] = self.video.interpolateXY( X[xi, yi], Y[xi, yi] )
+        # TODO: optimize
         
         #return roi_data, LDA
         self.ROI = roi_data
@@ -182,9 +221,36 @@ class Object:
         origin = (self.descriptor.roi_width-1)/2
         
         left = -0.5 - origin
-        right = int(self.descriptor.roi_width + self.descriptor.sref*MAX_LDA/self.descriptor.ldaref) - 0.5 - origin
+        right = int(self.descriptor.roi_width + MAX_LDA*self.lda_to_px()) - 0.5 - origin
         bottom = int(self.descriptor.roi_width) - 0.5 - origin
         top = -0.5 - origin
+        
+        return ( left, right, bottom, top )
+    
+    def streak_extent(self, MAX_LDA = False):
+        if not MAX_LDA:
+            MAX_LDA = self.MAX_LDA
+
+        origin = (self.descriptor.roi_width-1)/2
+        
+        #left = +0.5 + origin
+        left = int(self.descriptor.roi_width + self.correction.ldamin*self.lda_to_px()) - 0.5 - origin
+        right = int(self.descriptor.roi_width + MAX_LDA*self.lda_to_px()) - 0.5 - origin
+        bottom = int(self.descriptor.roi_width) - 0.5 - origin
+        top = -0.5 - origin
+        
+        return ( left, right, bottom, top )
+    
+    def zeroth_order_extent(self, MAX_LDA = False):
+        if not MAX_LDA:
+            MAX_LDA = self.MAX_LDA
+
+        origin = (self.descriptor.roi_width-1)/2
+        
+        left = - 0.5 - origin
+        right = + 0.5 + origin
+        bottom = + 0.5 + origin
+        top = - 0.5 - origin
         
         return ( left, right, bottom, top )
     
@@ -202,7 +268,45 @@ class Object:
     
     def zeroth_order(self):
         if self.roi_generated:
-            return self.ROI[ : , : , 0:self.ROI.shape[1] ]
+            return self.ROI[ : , : , :self.ROI.shape[1] ]
+        else:
+            return False
+    
+    def streak(self):
+        if self.roi_generated:
+            return self.ROI[ : , : , self.streak_begin_idx: ]
+        else:
+            return False
+    
+    def region(self, r_enum:Region):
+        if r_enum == Region.ROI:
+            return self.roi()
+        elif r_enum == Region.SPOT:
+            return self.zeroth_order()
+        elif r_enum == Region.STREAK:
+            return self.streak()
+        else:
+            return False
+    
+    def extent(self, r_enum:Region):
+        if r_enum == Region.ROI:
+            return self.roi_extent()
+        elif r_enum == Region.SPOT:
+            return self.zeroth_order_extent()
+        elif r_enum == Region.STREAK:
+            return self.streak_extent()
+        else:
+            return False
+    
+    def lda(self, r_enum:Region):
+        if r_enum == Region.ROI:
+            return self.LDA
+        elif r_enum == Region.SPOT:
+            return self.LDA[:self.ROI.shape[1]]
+        elif r_enum == Region.STREAK:
+            return self.LDA[self.streak_begin_idx:]
+        else:
+            return False
     
     def subtract_background(self):
         if self.roi_generated:
