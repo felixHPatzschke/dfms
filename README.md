@@ -43,13 +43,13 @@
 
  This step requires the user to locate and select a feature in an image, hence, an executable python file and a Qt-based GUI are used here, instead of a Jupyter Notebook.
  
- After the user puts in the information about the particle, is is serialized to a `json` file.
+ After the user puts in the information about the particle, is is serialized to a JSON file.
  
 ### Analysis of Particle Spectra 
  File: `Spectra Analysis.ipynb`
  
  This Jupyter Notebook performs the final evaluation of a particle's scattering spectrum.
- Particle metadata is read from `json` files placed in a directory that is specified at the baginning of the Notebook.
+ Particle metadata is read from JSON files placed in a directory that is specified at the baginning of the Notebook.
  The microscope data is then read from the video files specified in the metadata.
  Various mathematical things happen to generate spectra corresponding to the light captured from the particle.
  The spectra are corrected for the signatures of the devices used for the measurement of each particle.
@@ -72,5 +72,8 @@
      + Starting path for the file chooser
      + Colour map for previews
  * Input files from command line arguments
+ 
+### Calibration
+ * Make it possible to save multiple calibrations (e.g. by date of recording), save the appropriate one for each particle in Tagging
  
 and many more...
