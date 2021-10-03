@@ -12,6 +12,12 @@
  
  These data are later used to correct the measured spectrum of a particle for the signature of the setup.
  
+ Currently, the following devices and corresponding spectra are available:
+ <figure>
+   <img src="https://github.com/felixHPatzschke/dfms/blob/main/Devices Characteristic Spectra.png">
+   <figcaption><figcaption>
+ <figure>
+ 
 ### Calibration
  File: `Calibration.ipynb`
  
