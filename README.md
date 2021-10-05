@@ -83,6 +83,7 @@
      + Selected region for the streak
      + An extracted Spectrum from the streak
      + A corrected spectrum given the currently selected devices
+ * Allow input of angles outside of the 0°-360° range, specifically negative angles
  
 ### Calibration
  * Make it possible to save multiple calibrations (e.g. by date of recording), save the appropriate one for each particle in Tagging
