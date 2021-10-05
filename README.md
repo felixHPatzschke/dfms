@@ -78,8 +78,17 @@
      + Starting path for the file chooser
      + Colour map for previews
  * Input files from command line arguments
+ * Preview
+     + Selected region for zero-th order
+     + Selected region for the streak
+     + An extracted Spectrum from the streak
+     + A corrected spectrum given the currently selected devices
  
 ### Calibration
  * Make it possible to save multiple calibrations (e.g. by date of recording), save the appropriate one for each particle in Tagging
- 
-and many more...
+
+### Analysis of Particle Spectra
+ * Automatically write the results to CSV files
+ * Better (i.e. weighted) normalization for the comparison to theory
+  
+and many, many more...
