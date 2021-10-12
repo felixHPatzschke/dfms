@@ -159,6 +159,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Alignment Tab
         self.ui.doubleSpinBox_d.setValue(3)
         self.ui.doubleSpinBox_d.setValue(21)
+        self.ui.doubleSpinBox_alpha.setValue(0.0)
         # nothing else to do here, example values are already reasonable
         
         # Type and Corrections Tab
@@ -305,7 +306,8 @@ class MainWindow(QtWidgets.QMainWindow):
             obj_dsc.x = int( videos_width / 2 )
             obj_dsc.y = int( videos_height / 2 )
             #print( vdata_max.size )
-            obj_dsc.angle = 180.0
+            obj_dsc.angle = -1.0*self.ui.doubleSpinBox_alpha.value()
+            #obj_dsc.angle = 180.0
             if obj_dsc.roi_width > np.min( vdata_max.size ):
                 obj_dsc.roi_width = np.min( vdata_max.size )
             
@@ -430,7 +432,7 @@ class MainWindow(QtWidgets.QMainWindow):
             text = "{f}\n{v} {n}".format( f=devs[ID].function, v=devs[ID].vendor, n=devs[ID].name )
             item = QListWidgetItem( text )
             item.setFlags( QtCore.Qt.ItemIsEnabled|QtCore.Qt.ItemIsUserCheckable )
-            item.setCheckState( 2 )
+            item.setCheckState( 0 )
             
             self.dev_ids.append( devs[ID].uid )
             self.dev_items.append(item)
