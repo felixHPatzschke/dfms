@@ -445,6 +445,7 @@
         "asymm_cmap":"jet",
         "symm_cmap":"twilight",
         "monochrome_cmap":"gist_heat",
+        "binary_cmap":"binary_r",
         "width":12,
         "error_range_alpha":0.25
     }

@@ -19,6 +19,7 @@ nonstandard_params = {
     "asymm_cmap":"jet",
     "symm_cmap":"twilight",
     "monochrome_cmap":"gist_heat",
+    "binary_cmap":"binary_r",
     "width":12,
     "error_range_alpha":0.2
 }
@@ -49,6 +50,8 @@ def style_filename(mode):
 def cmap(datatype=''):
     if datatype in [ 'a', 'asymm', 'asymmetric' ]:
         return nonstandard_params['asymm_cmap']
+    if datatype in [ 'b', 'bin', 'binary' ]:
+        return nonstandard_params['binary_cmap']
     elif datatype in [ 's', 'symm', 'symmetric' ]:
         return nonstandard_params['symm_cmap']
     elif datatype in [ 'm', 'mono', 'monochrome' ]:
