@@ -27,14 +27,6 @@ class Drawable:
         self.preferred_linestyle = '-'
         self.preferred_linewidth = 2
     
-    #def scale(self, x, y):
-    #    self.xsc *= x
-    #    self.ysc *= y
-    #    return self
-    #    
-    #def scale(self, s):
-    #    return self.scale(s,s)
-    
     def scale(self, *args):
         if len(args)==1:
             self.xsc *= args[0]
@@ -181,9 +173,23 @@ class Plane(Drawable):
         
         self._X = np.array( [-1.0, +1.0] )
         self._Y = np.array( [0.0, 0.0] )
-        
+    
+    # TODO: remove this
     def __call__(self, x):
         return np.tan( self.rot )*(x-self.xtr)+self.ytr
+    
+    def y(self, x):
+        return np.tan( self.rot )*(x-self.xtr)+self.ytr
+    
+    def x(self, y):
+        return np.cot( self.rot )*(y-self.ytr)+self.xtr
+        
+class Grating(Plane):
+    def __init__(self):
+        super().__init__()
+        
+        self.preferred_linestyle = ':'
+        #self.preferred_linewidth = 4
         
 class Lens(Plane):
     def __init__(self, ctop=1.0, cbottom=1.0):
