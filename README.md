@@ -91,4 +91,8 @@
  * Automatically write the results to CSV files
  * Better (i.e. weighted) normalization for the comparison to theory
   
+### Sketching
+ * Concatenate Curves for continuous paths
+ * Properly determine the intersection of a light ray with a component
+  
 and many, many more...
