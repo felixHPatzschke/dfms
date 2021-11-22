@@ -444,7 +444,7 @@
     "ytick.minor.width": 0.6,
     "ytick.right": false,
     "nonstandard_params": {
-        "asymm_cmap":"gnuplot2_r",
+        "asymm_cmap":"jet",
         "symm_cmap":"seismic",
         "monochrome_cmap":"gist_heat_r",
         "binary_cmap":"binary",
