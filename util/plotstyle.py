@@ -28,6 +28,9 @@ nonstandard_params = {
 def monochrome_fg():
     return plt.rcParams['text.color']
 
+def monochrome_bg():
+    return plt.rcParams['axes.facecolor']
+
 def figsize(aspect):
     WIDTH = nonstandard_params['width']
     HEIGHT = width/aspect
