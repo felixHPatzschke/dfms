@@ -48,20 +48,26 @@ class PrimitiveImageROI:
         return 0.5*(self.ymin+self.ymax)
     
     def width(self):
-        return self.xmax-self.xmin
+        return self.xmax+1-self.xmin
     
     def height(self):
-        return self.ymax-self.ymin
+        return self.ymax+1-self.ymin
+    
+    def X(self):
+        return np.arange( self.xmin, self.xmax+1 )
+    
+    def Y(self):
+        return np.arange( self.ymin, self.ymax+1 )
     
     def to_extent(self):
-        return [ self.xmin-0.5, self.xmax-0.5, self.ymax-0.5, self.ymin-0.5 ]
+        return [ self.xmin-0.5, self.xmax+0.5, self.ymax+0.5, self.ymin-0.5 ]
     
     """
     In case one wants to use the object like this:
     ROI(image)
     """
     def __call__(self, arr:np.typing.ArrayLike):
-        return arr[self.ymin:self.ymax,self.xmin:self.xmax]
+        return arr[self.ymin:self.ymax+1,self.xmin:self.xmax+1]
     
     """
     The i.m.o. more elegant implementation should enable usage like this:
@@ -163,6 +169,10 @@ class SliceDataset:
         self.roi_devs = np.zeros( (1,1) )
         self.SLICE = PrimitiveImageROI()
         self.SMEAR = PrimitiveImageROI()
+        self.TOPBG = PrimitiveImageROI()
+        self.BOTBG = PrimitiveImageROI()
+        
+        self.x0_px = 0
     
     # because I can't be fucked to type out "INTENSITY" every time
     def INSY(self, y:np.typing.ArrayLike):
@@ -171,7 +181,11 @@ class SliceDataset:
     def SPEC(self, y:np.typing.ArrayLike):
         return np.zeros( (1) )
     
+    """
+    Only returns displacement in pixel coords, conversion to LDA has to be done manually for now.
+    """
     def LDA(self):
+        return (np.arange( self.SMEAR.xmin, self.SMEAR.xmax )-self.SLICE.xmid())
         return np.zeros( (1) )
     
     def load_image_data(self, tiff:TIFF_Stack):
@@ -210,7 +224,7 @@ class SliceDataset:
         
         return self
     
-    def gen_rois(self):
+    def gen_rois(self, ROI_MINIMUM_WIDTH=4):
         # project the mask onto the x- and y-axes
         xmask = np.where( np.sum(self.img_mask,axis=0)>2, 1, 0 )
         ymask = np.where( np.sum(self.img_mask,axis=1)>2, 1, 0 )
@@ -242,7 +256,6 @@ class SliceDataset:
                     maskstate = False
         
         # reject too narrow ROI's (probably only noise)
-        ROI_MINIMUM_WIDTH = 4
         self.rois = [ roi for roi in self.rois if roi.width()>=ROI_MINIMUM_WIDTH ]
         
         return self
@@ -259,6 +272,7 @@ class SliceDataset:
         
         for i in range( len( self.rois ) ):
             X = np.arange(self.rois[i].width())
+            #X = self.rois[i].X()
             for y in range( self.rois[0].height() ):
                 norm      =          np.sum(            (self.rois[i](self.img_data_avg)[y]) )
                 mids[i,y] =          np.sum(            (self.rois[i](self.img_data_avg)[y]/norm)*(X) )
@@ -321,6 +335,55 @@ class SliceDataset:
         calibration.px_err = np.mean(shiftdev_y)
         
         return calibration
+    
+    def map_rois(self):
+        self.SLICE = self.rois[0]
+        self.SMEAR = self.rois[1]
+        # TODO: select likely candidates for these R'sOI by signal strength
+        
+        self.SMEAR.xmax = int( self.SMEAR.xmin + ( self.SMEAR.xmin-self.SLICE.xmid() ) )
+        self.x0_px = self.SLICE.xmid()
+        # TODO: align to the actual mean x in the slice
+        
+        self.TOPBG.xmin = 0 # self.SLICE.xmin
+        self.TOPBG.xmax = self.img_data_avg.shape[1]-1 # self.SMEAR.xmax
+        
+        self.BOTBG.xmin = 0 # self.SLICE.xmin
+        self.BOTBG.xmax = self.img_data_avg.shape[1]-1 # self.SMEAR.xmax
+        
+        self.TOPBG.ymin = 0
+        self.TOPBG.ymax = np.min( np.array( [ roi.ymin for roi in [self.SLICE, self.SMEAR] ] ) )-1
+        
+        self.BOTBG.ymin = np.max( np.array( [ roi.ymax for roi in [self.SLICE, self.SMEAR] ] ) )+1
+        self.BOTBG.ymax = self.img_data_avg.shape[0]-1
+        
+        return self
+    
+    def correct_top_bottom_bg(self):
+        bg_upper = np.mean(self.TOPBG(self.img_data_avg), axis=0 )
+        bg_lower = np.mean(self.BOTBG(self.img_data_avg), axis=0 )
+        
+        bgdev_upper = np.std(self.TOPBG(self.img_data_avg), axis=0 )
+        bgdev_lower = np.std(self.BOTBG(self.img_data_avg), axis=0 )
+        
+        idx_upper = self.TOPBG.ymid()
+        idx_lower = self.BOTBG.ymid()
+        
+        # Smoothe the bg profiles a fair bit
+        kernel = np.array( [ np.exp( -(x**2)/256 ) for x in np.arange(-16,17) ] )
+        kernel /= np.sum(kernel)
+        bg_upper = np.convolve( bg_upper, kernel, mode='same' )
+        bg_lower = np.convolve( bg_lower, kernel, mode='same' )
+        
+        self.img_bg = np.zeros( self.img_data_avg.shape )
+
+        for y in range(self.img_bg.shape[0]):
+            fac = (y-idx_upper)/(idx_lower-idx_upper)
+            self.img_bg[y] -= (fac)*bg_lower + (1-fac)*bg_upper
+        
+        self.img_data_avg -= self.img_bg
+        
+        return self
 
 
 #class ImageDataset:
