@@ -120,7 +120,14 @@ dmypy.json
 *.tdms
 *.tdms_index
 
+# TIFF and TIFF metadata files
+*.tif
+*.tiff
+*.rec
+
 # Tests
 *Test.ipynb
 *test.ipynb
+*Test.pdf
+*test.pdf
 ui/assemble_ui.sh
