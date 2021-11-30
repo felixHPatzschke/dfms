@@ -39,6 +39,10 @@ def figsize(aspect):
 def err_alpha():
     return nonstandard_params['error_range_alpha']
 
+def c(idx):
+    #return plt.rcParams['axes.prop_cycle'][idx]['color']
+    return plt.rcParams['axes.prop_cycle'].by_key()['color'][idx]
+
 
 def style_filename(mode):
     if mode == Mode.DARK:

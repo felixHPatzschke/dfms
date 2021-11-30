@@ -31,6 +31,8 @@ class PrimitiveImageROI:
         self.xmax = 0
         self.ymin = 0
         self.ymax = 0
+        self.xmean = 0.0
+        self.ymean = 0.0
         for kw in kwargs:
             if kw in ['xmin', 'left']:
                 self.xmin = kwargs[kw]
@@ -62,12 +64,32 @@ class PrimitiveImageROI:
     def to_extent(self):
         return [ self.xmin-0.5, self.xmax+0.5, self.ymax+0.5, self.ymin-0.5 ]
     
+    def set_xmean(self, m):
+        self.xmean = m
+        return self
+    
+    #def set_ymean(self, m):
+    #    self.ymean = m
+    #    return self
+    
+    def get_xmean(self):
+        return self.xmean 
+    
+    #def get_ymean(self):
+    #    return self.ymean
+    
     """
     In case one wants to use the object like this:
     ROI(image)
     """
     def __call__(self, arr:np.typing.ArrayLike):
         return arr[self.ymin:self.ymax+1,self.xmin:self.xmax+1]
+    
+    def xslice(self):
+        return slice(self.xmin, self.xmax+1)
+    
+    def yslice(self):
+        return slice(self.ymin, self.ymax+1)
     
     """
     The i.m.o. more elegant implementation should enable usage like this:
@@ -77,10 +99,10 @@ class PrimitiveImageROI:
     For now...
     """
     def idxs(self):
-        return ( slice(self.ymin, self.ymax), slice(self.xmin, self.xmax) )
+        return ( slice(self.ymin, self.ymax+1), slice(self.xmin, self.xmax+1) )
     
     def to_string(self):
-        return "ROI: x:[{a}:{b}], y:[{c}:{d}]".format(a=self.xmin, b=self.xmax, c=self.ymin, d=self.ymax)
+        return "ROI: x:[{a}:{b}],\n     y:[{c}:{d}],\n     <x>={xm}".format(a=self.xmin, b=self.xmax, c=self.ymin, d=self.ymax, xm=self.xmean)
 
 class TIFF_Metadata:
     def __init__(self):
@@ -141,6 +163,12 @@ class Calibration:
     def lda_to_px(self, a:np.typing.ArrayLike=1):
         return (self.px_ref/self.lda_ref)*a
     
+    def lda_error(self, a:np.typing.ArrayLike=1):
+        return (np.abs(self.lda_err/self.px_ref) + np.abs( (self.lda_ref*self.px_err)/(self.px_ref*self.px_ref) ))*a
+    
+    def px_error(self, a:np.typing.ArrayLike=1):
+        return (np.abs(self.px_err/self.lda_ref) + np.abs( (self.px_ref*self.lda_err)/(self.lda_ref*self.lda_ref) ))*a
+    
     def to_dict(self):
         return { 'ldaref':self.lda_ref, 'pxref':self.px_ref, 'ldaerr':self.lda_err, 'pxerr':self.px_err }
     
@@ -151,7 +179,7 @@ Abstraction Layer to hold the information on the data extracted from an image se
 class SliceDataset:
     # Constructor
     def __init__(self):
-        """ I know this isn't exactly necessary, but coming from C-style languages I prefer to have variables declared somewhere """
+        """ I know this isn't exactly necessary, but, coming from C-style languages, I prefer to have variables declared somewhere """
         
         # Image Data
         self.img_data_avg = np.zeros( (1,1) )
@@ -271,8 +299,8 @@ class SliceDataset:
         devs = np.zeros( (len(self.rois), self.rois[0].height()) )
         
         for i in range( len( self.rois ) ):
-            X = np.arange(self.rois[i].width())
-            #X = self.rois[i].X()
+            #X = np.arange(self.rois[i].width())
+            X = self.rois[i].X()
             for y in range( self.rois[0].height() ):
                 norm      =          np.sum(            (self.rois[i](self.img_data_avg)[y]) )
                 mids[i,y] =          np.sum(            (self.rois[i](self.img_data_avg)[y]/norm)*(X) )
@@ -307,13 +335,20 @@ class SliceDataset:
         What it is ain't exactly clear...
         """
         
+        """
+        Interludium: Store the statistical mids for each ROI
+        """
+        for i in range( len( self.rois ) ):
+            self.rois[i].set_xmean( np.mean(self.roi_mids[i]) )
+        
         # compute relative offsets (w/ errors), line-by-line and for each roi
         shift_ny = np.copy( mids[1:] )
         shiftdev_ny = np.copy( devs[1:] )
         for i in range( shift_ny.shape[0] ):
             shift_ny[i] -= mids[0]
             # adjust for different R'sOI
-            shift_ny[i] += self.rois[i+1].xmin - self.rois[0].xmin
+            # (no longer necessary)
+            #shift_ny[i] += self.rois[i+1].xmin - self.rois[0].xmin
             # divide by degree of separation
             shift_ny[i] /= i+1
             
@@ -384,9 +419,39 @@ class SliceDataset:
         self.img_data_avg -= self.img_bg
         
         return self
+    
+    def get_local_spec(self, y, binning=1):
+        
+        return None
 
 
 #class ImageDataset:
 #    def __init__(self):
 
+
+class BFPDataset:
+    def __init__(self, layers:int, im_height:int):
+        self.layers = layers
+        # offsets (in µm) of the images ("layers") at the slit
+        self.slit_offsets = np.zeros( (layers) )
+        # offsets (in px) that the images ("layers") should have at the sensor
+        self.px_offsets = np.zeros( (layers) )
+        # images
+        #   axis 0: index of image ("layer")
+        #   axis 1: y
+        #   axis 2: x (+offset)
+        # such that a sum (axis=0) gives the proper image
+        self.images = np.zeros( (1,1,1) )
+        self.binned_images = np.zeros( (1,1,1) )
+        self.y_binning = 1
+        # spectra
+        #   axis 0: layer
+        #   axis 1: y
+        #   axis 2: lambda
+        self.spectra = np.zeros( (1,1,1) )
+        
+    def set_slit_offsets(self, arr:np.typing.ArrayLike):
+        self.slit_offsets = np.copy(arr)
+        #self.layers = self.slit_offsets.shape[0]
+        return self
 
