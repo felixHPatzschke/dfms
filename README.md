@@ -67,10 +67,14 @@
  * `numpy 1.20.2` or higher
  * `matplotlib 3.4.2` or higher and `matplotlib-inline 0.1.2` or higher
  * `scipy 1.7.0` or higher
+ * `scikit-image 0.18.1` or higher
  * `PyQt5 5.15.4` or higher
  * `npTDMS 1.3.0` or higher
 
 ## To do
+
+### Core Functionality
+ * Tools for evaluating back focal plane spectroscopy measurement data
 
 ### Quality of Life Features (Particle Tagging)
  * Automatic particle detection
@@ -83,7 +87,6 @@
      + Selected region for the streak
      + An extracted Spectrum from the streak
      + A corrected spectrum given the currently selected devices
- * Allow input of angles outside of the 0°-360° range, specifically negative angles
  
 ### Calibration
  * Make it possible to save multiple calibrations (e.g. by date of recording), save the appropriate one for each particle in Tagging
@@ -91,5 +94,9 @@
 ### Analysis of Particle Spectra
  * Automatically write the results to CSV files
  * Better (i.e. weighted) normalization for the comparison to theory
+  
+### Sketching
+ * Concatenate Curves for continuous paths
+ * Properly determine the intersection of a light ray with a component
   
 and many, many more...
