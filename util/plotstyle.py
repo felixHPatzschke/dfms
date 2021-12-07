@@ -19,6 +19,7 @@ nonstandard_params = {
     "asymm_cmap":"jet",
     "symm_cmap":"twilight",
     "monochrome_cmap":"gist_heat",
+    "binary_cmap":"binary_r",
     "width":12,
     "error_range_alpha":0.2
 }
@@ -27,6 +28,9 @@ nonstandard_params = {
 def monochrome_fg():
     return plt.rcParams['text.color']
 
+def monochrome_bg():
+    return plt.rcParams['axes.facecolor']
+
 def figsize(aspect):
     WIDTH = nonstandard_params['width']
     HEIGHT = width/aspect
@@ -34,6 +38,10 @@ def figsize(aspect):
 
 def err_alpha():
     return nonstandard_params['error_range_alpha']
+
+def c(idx):
+    #return plt.rcParams['axes.prop_cycle'][idx]['color']
+    return plt.rcParams['axes.prop_cycle'].by_key()['color'][idx]
 
 
 def style_filename(mode):
@@ -49,6 +57,8 @@ def style_filename(mode):
 def cmap(datatype=''):
     if datatype in [ 'a', 'asymm', 'asymmetric' ]:
         return nonstandard_params['asymm_cmap']
+    if datatype in [ 'b', 'bin', 'binary' ]:
+        return nonstandard_params['binary_cmap']
     elif datatype in [ 's', 'symm', 'symmetric' ]:
         return nonstandard_params['symm_cmap']
     elif datatype in [ 'm', 'mono', 'monochrome' ]:
